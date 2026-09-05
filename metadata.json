@@ -1,0 +1,6 @@
+{
+  "name": "Santiago Code & Agent IDE",
+  "description": "Sovereign, local-first enterprise AI coding engine with Monaco Editor, inline ghost-text completions, Santiago AI Assistant, voice module, and full production VS Code extension source code.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
