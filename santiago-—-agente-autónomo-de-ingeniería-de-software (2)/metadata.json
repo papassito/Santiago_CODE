@@ -1,0 +1,6 @@
+{
+  "name": "Santiago — Agente Autónomo de Ingeniería de Software",
+  "description": "Santiago Yeminoux Core: Agente autónomo de desarrollo y arquitecto de infraestructura con soporte nativo para Google DeepMind Antigravity y extensión VS Code (LSP/MCP). Bucle de auto-refactoring iterativo, RAG local para manuales y DICOM, ADN soberano y costo operativo de $0.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
