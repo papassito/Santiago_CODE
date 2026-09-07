@@ -1,8 +1,39 @@
+# --- CLAVES Y SECRETOS (SÚPER IMPORTANTE) ---
+.env
+*.env
+.env.local
+*.pem
+*.key
+*.hash
+
+# --- BINARIOS Y EJECUTABLES EN GO (ESPECÍFICO DE SOLUSOL) ---
+bin/
+*.exe
+*.exe;
+solusol-core
+solusol-core-linux-amd64
+solusol-core-test.exe
+core.exe
+
+# --- BASES DE DATOS Y ARCHIVOS DE REGISTRO LOCALES ---
+*.db
+*.db-shm
+*.db-wal
+solusol_core.db
+
+# --- ENTORNOS Y ARCHIVOS DE PYTHON / NODE ---
+__pycache__/
+*.py[cod]
+*$py.class
 node_modules/
-build/
-dist/
-coverage/
+.venv/
+venv/
+ENV/
+
+# --- ARCHIVOS TEMPORALES DE SISTEMA Y EDITORES ---
 .DS_Store
+Thumbs.db
 *.log
-.env*
-!.env.example
+
+# --- CONFIGURACIÓN LOCAL DE VS CODE ---
+# .vscode/
