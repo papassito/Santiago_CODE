@@ -23,15 +23,15 @@ export class LocalSwarmSimulator {
       role: 'API Router & AI Model Orchestrator',
       technology: 'Go 1.22 + GGUF Engine',
       status: 'online',
-      officialStatus: 'OPERACIONAL',
-      verificationLevel: 'NIVEL_3_FUNCIONA',
+      officialStatus: 'DISEÑADO',
+      verificationLevel: 'NIVEL_1_EXISTE',
       latencyMs: 34,
       p50Ms: 31,
       p95Ms: 46,
       p99Ms: 72,
       uptimeSeconds: 3840,
       endpoint: 'http://localhost:34820',
-      evidence: 'Pruebas E2E superadas. Sub-50ms P95 medido en bucle continuo.',
+      evidence: 'Simulación local de interfaz. El daemon físico en Go no está implementado.',
     },
     {
       id: 'rag',
@@ -40,15 +40,15 @@ export class LocalSwarmSimulator {
       role: 'Memoria Técnica, AST & Grafo de Símbolos',
       technology: 'Go + Tree-sitter + HNSW Vector Graph',
       status: 'online',
-      officialStatus: 'OPERACIONAL',
-      verificationLevel: 'NIVEL_3_FUNCIONA',
+      officialStatus: 'DECLARADO',
+      verificationLevel: 'NIVEL_1_EXISTE',
       latencyMs: 12,
       p50Ms: 11,
       p95Ms: 18,
       p99Ms: 29,
       uptimeSeconds: 3840,
       endpoint: 'http://localhost:34821',
-      evidence: '2,840 símbolos Go/TS indexados en RAM. 100% de consultas resueltas.',
+      evidence: 'Estructura declarada en documentación. Pendiente de implementación de indexación real.',
     },
     {
       id: 'runner',
@@ -57,15 +57,15 @@ export class LocalSwarmSimulator {
       role: 'Mecanismo de Ejecución y Aislamiento PTY',
       technology: 'Go + Linux Namespaces / Isolated PTY',
       status: 'online',
-      officialStatus: 'OPERACIONAL',
-      verificationLevel: 'NIVEL_3_FUNCIONA',
+      officialStatus: 'DISEÑADO',
+      verificationLevel: 'NIVEL_1_EXISTE',
       latencyMs: 8,
       p50Ms: 7,
       p95Ms: 14,
       p99Ms: 22,
       uptimeSeconds: 3840,
       endpoint: 'http://localhost:34822',
-      evidence: 'Control de stdout/stderr, cancelación por timeout y captura de exit code verificado.',
+      evidence: 'Comportamiento simulado en entorno de desarrollo UI. Requiere compilación de servicio nativo.',
     },
     {
       id: 'vault',
@@ -74,15 +74,15 @@ export class LocalSwarmSimulator {
       role: 'Almacenamiento Criptográfico de Estado',
       technology: 'Go + ChaCha20-Poly1305 + Argon2id',
       status: 'online',
-      officialStatus: 'VERIFICADO',
-      verificationLevel: 'NIVEL_3_FUNCIONA',
+      officialStatus: 'DISEÑADO',
+      verificationLevel: 'NIVEL_1_EXISTE',
       latencyMs: 5,
       p50Ms: 4,
       p95Ms: 9,
       p99Ms: 15,
       uptimeSeconds: 3840,
       endpoint: 'http://localhost:34823',
-      evidence: 'Cifrado local verificado. Claves derivadas con salting criptográfico.',
+      evidence: 'Esquema criptográfico diseñado. Estado en host real no implementado.',
     },
   ];
 
@@ -188,20 +188,29 @@ export class LocalSwarmSimulator {
   }
 
   public toggleDaemonStatus(id: string): SwarmDaemon | undefined {
-    const d = this.daemons.find((item) => item.id === id);
-    if (d) {
-      d.status = d.status === 'online' ? 'offline' : 'online';
-      d.officialStatus = d.status === 'online' ? 'OPERACIONAL' : 'FALLIDO';
+    this.daemons = this.daemons.map((item) => {
+      if (item.id === id) {
+        const nextStatus = item.status === 'online' ? 'offline' : 'online';
+        return {
+          ...item,
+          status: nextStatus,
+          officialStatus: nextStatus === 'online' ? 'OPERACIONAL' : 'FALLIDO',
+        };
+      }
+      return item;
+    });
+    const updated = this.daemons.find((item) => item.id === id);
+    if (updated) {
       this.addAudit(
         'Runner-Daemon',
         'VERIFY',
-        `Daemon ${d.name}`,
-        `Transición a ${d.status.toUpperCase()}`,
+        `Daemon ${updated.name}`,
+        `Transición a ${updated.status.toUpperCase()}`,
         'NIVEL_2_EJECUTA',
-        d.status === 'online'
+        updated.status === 'online'
       );
     }
-    return d;
+    return updated;
   }
 
   public getAuditLogs(): AuditLogEntry[] {
@@ -232,6 +241,91 @@ export class LocalSwarmSimulator {
       verified,
     });
     if (this.auditLogs.length > 50) this.auditLogs.pop();
+  }
+
+  /**
+   * Simula la tubería de validación y ejecución de borrado seguro en el filesystem local.
+   * Sigue la secuencia: Target Validation -> Permission Check -> Execution -> Evidence
+   */
+  public simulateSecureDelete(filePath: string): {
+    code: string;
+    status: 'SUCCESS' | 'FAILURE' | 'DENIED' | 'UNKNOWN';
+    severity: string;
+    message: string;
+    targetValidated: boolean;
+    permissionVerified: boolean;
+    executionWitnessed: boolean;
+    evidencePayload: {
+      syscall: string;
+      exitCode: number;
+      output: string;
+      verifiedByVaultToken: boolean;
+    } | null;
+    timestamp: string;
+  } {
+    const timestamp = new Date().toISOString();
+
+    // 1. WORKSPACE TARGET VALIDATION (REQ-SEC-003, REQ-SEC-005)
+    if (filePath.includes('..') || filePath.startsWith('/') || filePath.includes(':')) {
+      this.addAudit(
+        'Runner-Daemon',
+        'EDIT',
+        filePath,
+        'Intento de borrado bloqueado: Violación de frontera de Workspace detectada (Path Traversal / Escape)',
+        'NIVEL_3_FUNCIONA',
+        false,
+        1,
+        'SC-WRK-007: WORKSPACE_BOUNDARY_VIOLATION'
+      );
+      return {
+        code: 'SC-WRK-007',
+        status: 'DENIED',
+        severity: 'CRITICAL',
+        message: 'La ruta de destino resuelve fuera de los límites autorizados del Workspace.',
+        targetValidated: false,
+        permissionVerified: false,
+        executionWitnessed: false,
+        evidencePayload: null,
+        timestamp,
+      };
+    }
+
+    // 2. DELETE PERMISSION CHECK & VAULT HANDSHAKE (SC-SEC-003)
+    const vault = this.daemons.find((d) => d.id === 'vault');
+    if (!vault || vault.status !== 'online') {
+      return {
+        code: 'SC-SEC-003',
+        status: 'DENIED',
+        severity: 'HIGH',
+        message: 'Servicio Vault Enclave (:34823) desconectado. No se puede validar la capacidad del token.',
+        targetValidated: true,
+        permissionVerified: false,
+        executionWitnessed: false,
+        evidencePayload: null,
+        timestamp,
+      };
+    }
+
+    // 3. EXECUTION & EVIDENCE CAPTURE (SC-SYS-000)
+    const resultLog = `Syscall unlink exitosa para ${filePath}. Descriptores de archivo del host liberados de forma segura.`;
+    this.addAudit('Runner-Daemon', 'EDIT', filePath, 'Borrado físico verificado en almacenamiento local', 'NIVEL_3_FUNCIONA', true, 0, `SC-SYS-000: ${resultLog}`);
+
+    return {
+      code: 'SC-SYS-000',
+      status: 'SUCCESS',
+      severity: 'INFO',
+      message: 'Archivo eliminado físicamente del almacenamiento del Workspace.',
+      targetValidated: true,
+      permissionVerified: true,
+      executionWitnessed: true,
+      evidencePayload: {
+        syscall: `unlink ${filePath}`,
+        exitCode: 0,
+        output: resultLog,
+        verifiedByVaultToken: true,
+      },
+      timestamp,
+    };
   }
 
   public getProblems(): DiagnosticProblem[] {

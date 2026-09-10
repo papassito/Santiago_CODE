@@ -39,7 +39,7 @@ export default function App() {
 
   // Files & Editor State
   const [files, setFiles] = useState<EditorFile[]>(INITIAL_EDITOR_FILES);
-  const [activeFileId, setActiveFileId] = useState<string>(INITIAL_EDITOR_FILES[0].id);
+  const [activeFileId, setActiveFileId] = useState<string>(INITIAL_EDITOR_FILES[0]?.id || '');
   const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({
     line: 1,
     column: 1,
@@ -58,24 +58,26 @@ export default function App() {
     {
       id: 'welcome-1',
       role: 'assistant',
-      content: `### 🤖 SANTIAGO — Plataforma Soberana de Desarrollo
+      content: `### 🤖 SANTIAGO — Entorno de Simulación (Fase 00)
 > **"UNA INTELIGENCIA — DOS INTERFACES"**
 
 Regla Suprema Oficial:
 \`VER -> ENTENDER -> DECIDIR -> ACTUAR -> VERIFICAR\`
 *No inventar. La última palabra la tiene la evidencia de ejecución.*
 
-Estoy orquestando localmente tus 4 micro-daemons:
-- **Gateway Router (:34820)** — Orquestador de inferencia y router local.
-- **RAG AST Memory (:34821)** — Grafo de símbolos en RAM (2,840 símbolos Go/TS).
-- **Runner Daemon (:34822)** — Aislamiento PTY, compilación y captura de exit codes.
-- **Vault Enclave (:34823)** — Estado sensible cifrado con ChaCha20-Poly1305.
+**AVISO DE GOBERNANZA**: Este entorno ejecuta una **SIMULACIÓN** de los componentes autorizados en COMPONENTS.md. No se realiza ninguna operación física real de borrado, ejecución ni cifrado en el host, dado que los adaptadores reales no están implementados ni verificados en el baseline maestro.
+
+Subsistemas autorizados en simulación:
+- **SANTIAGO ENGINE** — Orquestador y núcleo de reglas, gobernanza y seguridad.
+- **CASA DE SANTIAGO** — Interfaz de usuario y entorno de edición principal.
+- **SANTIAGO VOICE** — Módulo de procesamiento de comandos e intenciones por voz.
+- **SANTIAGO VS CODE EXTENSION** — Cliente de integración externa.
 
 **Prueba ahora**:
-1. Usa el selector superior para alternar entre **Santiago Studio (IDE)** y **Santiago Plugin (VS Code)**.
-2. Escribe código en el editor para probar **Ghost Text** (<kbd>Tab</kbd> para aceptar).
-3. Prueba el botón de voz para dictar con **Whisper.cpp** o escuchar respuestas con **Piper TTS**.
-4. Haz clic en **Agente Autónomo** para ver la ejecución del ciclo autónomo con verificación de pruebas reales.`,
+1. Usa el selector superior para alternar entre **Santiago Studio (IDE)**, **Santiago Plugin (VS Code)** y la vista de **Arquitectura**.
+2. Escribe código en el editor para probar la simulación de autocompletado de texto.
+3. Interactúa con el chat del asistente para consultar el estado del sistema.
+4. Haz clic en **Agente Autónomo** para simular la ejecución del bucle de control.`,
       timestamp: '10:00 AM',
     },
   ]);
@@ -86,19 +88,24 @@ Estoy orquestando localmente tus 4 micro-daemons:
     isListening: false,
     isSpeaking: false,
     transcript: '',
-    voiceEngineName: 'Whisper.cpp (C++ via Go)',
-    ttsEngineName: 'Piper TTS / Bark Neural',
+    voiceEngineName: 'SANTIAGO VOICE (Simulación)',
+    ttsEngineName: 'SANTIAGO VOICE (Síntesis)',
     supported: true,
   });
 
   // Track voice engine
   useEffect(() => {
-    voiceEngine.subscribe((state) => {
+    const unsubscribe = voiceEngine.subscribe((state) => {
       setVoiceState(state);
     });
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
-  // Swarm 10-second polling as required by prompt
+  // Swarm 10-second polling simulation
   useEffect(() => {
     const checkHealth = () => {
       const current = swarmSimulator.getDaemons();
@@ -112,9 +119,12 @@ Estoy orquestando localmente tus 4 micro-daemons:
     return () => clearInterval(interval);
   }, []);
 
-  const activeFile = files.find((f) => f.id === activeFileId) || files[0];
-  const gatewayDaemon = daemons.find((d) => d.id === 'gateway');
-  const isGatewayOnline = gatewayDaemon?.status === 'online';
+  // Selección segura del archivo activo
+  const activeFile = (files && files.length > 0)
+    ? (files.find((f) => f.id === activeFileId) || files[0])
+    : null;
+  const engineStatus = daemons.find((d) => d.id === 'gateway')?.status === 'online';
+  const isGatewayOnline = engineStatus;
 
   // Toggle daemon state
   const handleToggleDaemon = (daemonId: string) => {
@@ -175,7 +185,7 @@ Estoy orquestando localmente tus 4 micro-daemons:
         const errorMsg: ChatMessage = {
           id: Math.random().toString(36).substring(2, 9),
           role: 'assistant',
-          content: `⚠️ **Error de Conexión:** ${err.message || 'No se pudo contactar al Gateway (:34820)'}`,
+          content: `⚠️ **Error de Conexión:** ${err.message || 'No se pudo establecer conexión con Santiago Engine'}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
         setMessages((prev) => [...prev, errorMsg]);
@@ -266,12 +276,64 @@ Estoy orquestando localmente tus 4 micro-daemons:
     setActiveFileId(newF.id);
   };
 
-  // Delete file
+  // Delete file (Lógica corregida de borrado seguro)
   const handleDeleteFile = (id: string) => {
-    if (files.length <= 1) return;
-    setFiles((prev) => prev.filter((f) => f.id !== id));
-    if (activeFileId === id) {
-      setActiveFileId(files.find((f) => f.id !== id)?.id || files[0].id);
+    if (!files || files.length === 0) return;
+
+    const targetFile = files.find((f) => f.id === id);
+    if (!targetFile) return;
+
+    // 1. INTENCIÓN Y CONFIRMACIÓN HUMANA (UI TRIGGER ONLY)
+    const hasConsent = window.confirm(
+      `Confirmación de Operador requerida (REQ-SEC-010):\n¿Desea solicitar la simulación de eliminación de "${targetFile.path}" del Workspace?`
+    );
+
+    if (!hasConsent) {
+      swarmSimulator.addAudit(
+        'User',
+        'EDIT',
+        targetFile.path,
+        'Cancelación de solicitud de borrado por el operador humano',
+        'NIVEL_1_EXISTE',
+        false,
+        1,
+        'SC-MUT-002: MUTATION_DENIED (Operador canceló la acción)'
+      );
+      return;
+    }
+
+    // 2. DELEGACIÓN AL MOTOR DE SIMULACIÓN PARA EVALUACIÓN LÓGICA
+    const result = swarmSimulator.simulateSecureDelete(targetFile.path);
+
+    // 3. PROCESAMIENTO DEL RESULTADO SIMULADO (NOT_VERIFIED EN HOST REAL - SC-VER-002)
+    if (result.status === 'SUCCESS') {
+      // Actualización segura del estado de interfaz como consecuencia lógica de la simulación exitosa
+      const remainingFiles = files.filter((f) => f.id !== id);
+      setFiles(remainingFiles);
+
+      if (activeFileId === id) {
+        setActiveFileId(remainingFiles[0]?.id || '');
+      }
+
+      swarmSimulator.addAudit(
+        'Santiago-Agent',
+        'EDIT',
+        targetFile.path,
+        'Borrado simulado en memoria de UI (Fase 00: Estado Físico NO VERIFICADO)',
+        'NIVEL_1_EXISTE',
+        true,
+        0,
+        'SC-SYS-000: Simulación completada con éxito'
+      );
+    } else {
+      // Fallo o denegación por Fail-Closed
+      alert(
+        `OPERACIÓN RECHAZADA O NO COMPATIBLE (${result.code})\n\n` +
+        `Motivo: ${result.message}\n` +
+        `Verificación de Límites: ${result.targetValidated ? 'PASSED' : 'FAILED'}\n` +
+        `Estado de Permiso: ${result.permissionVerified ? 'AUTHORIZED' : 'DENIED'}\n` +
+        `Fase 00 - Estado en Host Real: NOT_VERIFIED (SC-VER-002)`
+      );
     }
   };
 
@@ -279,7 +341,7 @@ Estoy orquestando localmente tus 4 micro-daemons:
     <div className="flex flex-col h-screen w-screen bg-[#141416] text-zinc-100 overflow-hidden font-sans">
       {/* 1. Global Master TitleBar & Interface Mode Switcher */}
       <TitleBar
-        currentFileName={activeFile.name}
+        currentFileName={activeFile?.name || 'Sin Archivo'}
         isListening={voiceState.isListening}
         isSpeaking={voiceState.isSpeaking}
         onToggleVoice={() => voiceEngine.toggleListening()}
@@ -375,7 +437,7 @@ Estoy orquestando localmente tus 4 micro-daemons:
                 onInsertAtCursor={handleInsertAtCursor}
                 onClearHistory={() => setMessages([])}
                 isStreaming={isStreaming}
-                activeLanguage={activeFile.language}
+                activeLanguage={activeFile?.language || 'text'}
                 isGatewayOnline={isGatewayOnline}
               />
             )}
@@ -389,7 +451,7 @@ Estoy orquestando localmente tus 4 micro-daemons:
               />
             ) : activeView === 'source' ? (
               <ExtensionSourceViewer onExportZip={handleExportExtensionZip} />
-            ) : (
+            ) : activeFile ? (
               <MonacoCodeEditor
                 files={files}
                 activeFileId={activeFileId}
@@ -400,6 +462,18 @@ Estoy orquestando localmente tus 4 micro-daemons:
                 insertedSnippet={insertedSnippet}
                 onSnippetConsumed={() => setInsertedSnippet(null)}
               />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 bg-[#141416] p-8 text-center border border-zinc-800/40">
+                <span className="text-4xl mb-4">📂</span>
+                <p className="text-sm font-medium text-zinc-400">No hay archivos abiertos en el Workspace</p>
+                <p className="text-xs text-zinc-600 mt-1">Crea un nuevo archivo para comenzar la edición.</p>
+                <button
+                  onClick={handleNewFile}
+                  className="mt-4 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-zinc-100 rounded text-xs font-medium transition-colors"
+                >
+                  Nuevo Archivo
+                </button>
+              </div>
             )}
           </div>
 
@@ -426,7 +500,7 @@ Estoy orquestando localmente tus 4 micro-daemons:
         isAllHealthy={isAllHealthy}
         cursorLine={cursorPosition.line}
         cursorColumn={cursorPosition.column}
-        activeLanguage={activeFile.language}
+        activeLanguage={activeFile?.language || 'text'}
         problemCount={problems.length}
         onOpenBottomTab={(tab) => {
           setIsBottomPanelOpen(true);
